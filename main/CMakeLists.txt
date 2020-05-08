@@ -1,4 +1,3 @@
-set(COMPONENT_SRCS "max30102_main.c")
-set(COMPONENT_ADD_INCLUDEDIRS ".")
-
-register_component()
+idf_component_register(SRCS "heartrate.c"
+        INCLUDE_DIRS "."
+        EMBED_FILES "index.html")
