@@ -30,8 +30,8 @@
 #define I2C_ADDR_SSD1306       0x3c
 #include "./devices/ssd1306.c"
 
-#define EXAMPLE_WIFI_SSID "troutstream"
-#define EXAMPLE_WIFI_PASS "password"
+#define EXAMPLE_WIFI_SSID "MountPleasantLAN"
+#define EXAMPLE_WIFI_PASS "lastdayinparadise"
 #define PORT 80
 #include "./interfaces/wifisetup.c"
 
