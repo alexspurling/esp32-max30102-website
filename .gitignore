@@ -1,4 +1,5 @@
 .idea/
 sdkconfig
 cmake-build-debug/
+build/
 
