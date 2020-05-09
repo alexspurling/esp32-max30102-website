@@ -38,6 +38,8 @@
 
 #include "./interfaces/wifisetup.c"
 
+#include "websocket_server.h"
+
 //globals
 char outStr[1500];
 float meastime;
