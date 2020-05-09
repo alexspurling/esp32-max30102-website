@@ -104,34 +104,34 @@ uint8_t fonttable5x7[1080] =
 
 static int ssd1306_init() 
 {
-   i2c_write( 0x3c,  0x00,  0xae);    // display off
-   i2c_write( 0x3c,  0x00,  0xd5);    // clockdiv
-   i2c_write( 0x3c,  0x00,  0x80);
-   i2c_write( 0x3c,  0x00,  0xa8);    // multiplex
-   i2c_write( 0x3c,  0x00,  0x3f);
-   i2c_write( 0x3c,  0x00,  0xd3);    // offset
-   i2c_write( 0x3c,  0x00,  0x00);
-   i2c_write( 0x3c,  0x00,  0x40);    // startline
-   i2c_write( 0x3c,  0x00,  0x8d);    // charge pump
-   i2c_write( 0x3c,  0x00,  0x14);
-   i2c_write( 0x3c,  0x00,  0x20);    // memory mode
-   i2c_write( 0x3c,  0x00,  0x00);
-   i2c_write( 0x3c,  0x00,  0xa1);    // segregmap
-   i2c_write( 0x3c,  0x00,  0xc8);    // comscandec
-   i2c_write( 0x3c,  0x00,  0xda);    // set com pins
-   i2c_write( 0x3c,  0x00,  0x12);
-   i2c_write( 0x3c,  0x00,  0x81);    // contrast
-   i2c_write( 0x3c,  0x00,  0xcf);
-   i2c_write( 0x3c,  0x00,  0xd9);    // precharge
-   i2c_write( 0x3c,  0x00,  0xf1);
-   i2c_write( 0x3c,  0x00,  0xdb);    // vcom detect
-   i2c_write( 0x3c,  0x00,  0x40);
-   i2c_write( 0x3c,  0x00,  0xa4);    // resume
-   i2c_write( 0x3c,  0x00,  0xa6);    // normal (not inverted)
-   //i2c_write( 0x3c,  0x00,  0xe4);    // undocumented command saw on internet
-   i2c_write( 0x3c,  0x00,  0x00); 
-   i2c_write( 0x3c,  0x00,  0x10); 
-   i2c_write( 0x3c,  0x00,  0xaf);    // display on
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0xae);    // display off
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0xd5);    // clockdiv
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0x80);
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0xa8);    // multiplex
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0x3f);
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0xd3);    // offset
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0x00);
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0x40);    // startline
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0x8d);    // charge pump
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0x14);
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0x20);    // memory mode
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0x00);
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0xa1);    // segregmap
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0xc8);    // comscandec
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0xda);    // set com pins
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0x12);
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0x81);    // contrast
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0xcf);
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0xd9);    // precharge
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0xf1);
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0xdb);    // vcom detect
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0x40);
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0xa4);    // resume
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0xa6);    // normal (not inverted)
+   //i2c_write( I2C_ADDR_SSD1306,  0x00,  0xe4);    // undocumented command saw on internet
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0x00);
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0x10);
+   i2c_write( I2C_ADDR_SSD1306,  0x00,  0xaf);    // display on
    return(0);
 }
 
@@ -140,7 +140,7 @@ static int ssd1306_blank(uint8_t val)
    int len = 1024;
    uint8_t *data = malloc (len);
    for(int i=0; i<len; i++){ data[i] = val; }
-   i2c_write_block( 0x3c, 0x40, data, len);
+   i2c_write_block( I2C_ADDR_SSD1306, 0x40, data, len);
    free(data);
    return(0);
 }
@@ -196,8 +196,8 @@ static int ssd1306_text( char *disp_string )
    //otherwise oled screen wtite blocks for 100msec
    for (int a=0; a < 8; a++){
        //vTaskDelay(1); 
-       i2c_write( 0x3c,  0x00,  0x40);
-       i2c_write_block( 0x3c, 0x40, framebuffer+a*128, 128);
+       i2c_write( I2C_ADDR_SSD1306,  0x00,  0x40);
+       i2c_write_block( I2C_ADDR_SSD1306, 0x40, framebuffer+a*128, 128);
    }
    free(framebuffer);
    vTaskDelay(10); //let it finish up before relinquishing or else i2c errors

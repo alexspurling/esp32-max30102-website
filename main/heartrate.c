@@ -22,12 +22,12 @@
 #define I2C_ADDR_MAX30102      0x57 //max30102 i2c address
 #define i2c_port                  0
 #define i2c_frequency       800000
-#define i2c_gpio_sda             18
-#define i2c_gpio_scl             19
+#define i2c_gpio_sda             GPIO_NUM_22
+#define i2c_gpio_scl             GPIO_NUM_21
 
 #include "./interfaces/i2c.c"
 
-#define I2C_ADDR_SSD1306       0x3c
+#define I2C_ADDR_SSD1306       0x3d
 #include "./devices/ssd1306.c"
 
 #define EXAMPLE_WIFI_SSID "MountPleasantLAN"
