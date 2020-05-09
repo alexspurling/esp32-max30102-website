@@ -1,141 +1,228 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-<style>
-    body {background-color: orange;}
-    h1  { text-align:center; color:red; }
-    #rate { position:absolute;top:5%;right:35%;color:blue;font-size:x-large; }
-    #rpower { position:absolute;top:90%;left:10%;color:green;font-size:small; }
-    #irpower { position:absolute;top:95%;left:10%;color:green;font-size:small; }
-    #rpowertext { position:absolute;top:88%;left:20%;color:green;font-size:small; }
-    #irpowertext { position:absolute;top:93%;left:20%;color:green;font-size:small; }
-    #startstop { position:absolute;top:90%;right:20%;color:red;size:5;font-size:small; }
-    #raworbp { position:absolute;top:90%;right:10%;color:red;size:5;font-size:small; }
-    #myDiv { position:absolute;top:20%;left:10%;color:green;size:10;height:60%; width:80%; }
-    input { size:3;font-size:medium;}
-</style>
-  <!-- Plotly.js -->
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {
+            background-color: orange;
+        }
+
+        h1 {
+            text-align: center;
+            color: red;
+        }
+
+        #rate {
+            position: absolute;
+            top: 5%;
+            right: 35%;
+            color: blue;
+            font-size: x-large;
+        }
+
+        #rpower {
+            position: absolute;
+            top: 90%;
+            left: 10%;
+            color: green;
+            font-size: small;
+        }
+
+        #irpower {
+            position: absolute;
+            top: 95%;
+            left: 10%;
+            color: green;
+            font-size: small;
+        }
+
+        #rpowertext {
+            position: absolute;
+            top: 88%;
+            left: 20%;
+            color: green;
+            font-size: small;
+        }
+
+        #irpowertext {
+            position: absolute;
+            top: 93%;
+            left: 20%;
+            color: green;
+            font-size: small;
+        }
+
+        #startstop {
+            position: absolute;
+            top: 90%;
+            right: 20%;
+            color: red;
+            size: 5;
+            font-size: small;
+        }
+
+        #raworbp {
+            position: absolute;
+            top: 90%;
+            right: 10%;
+            color: red;
+            size: 5;
+            font-size: small;
+        }
+
+        #myDiv {
+            position: absolute;
+            top: 20%;
+            left: 10%;
+            color: green;
+            size: 10;
+            height: 60%;
+            width: 80%;
+        }
+
+        input {
+            size: 3;
+            font-size: medium;
+        }
+    </style>
+    <!-- Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 
 <body>
-    <h1> Heart Rate Monitor </h1>
-    <p id="rate"> </p>  
-    <form> <input type="button" id="startstop" value="Stop"> </form>
-    <form> <input type="button" id="raworbp" value="Raw"> </form>
-    <div id="myDiv" > </div>
-    <p id="rpowertext">Red LED Power</p>
-    <p id="irpowertext">IR LED Power</p>
-    <form> <input id="rpower" type="number" min="0" max="255"></form>
-    <form> <input id="irpower" type="number" min="0" max="255"></form>
-    <script>
-      setInterval(function(){ 
-          if(document.getElementById("startstop").value === "Stop"){
-                     getData();} } ,333); 
+<h1> Heart Rate Monitor </h1>
+<p id="rate"></p>
+<form><input type="button" id="startstop" value="Stop"></form>
+<form><input type="button" id="raworbp" value="Raw"></form>
+<div id="myDiv"></div>
+<p id="rpowertext">Red LED Power</p>
+<p id="irpowertext">IR LED Power</p>
+<form><input id="rpower" type="number" min="0" max="255"></form>
+<form><input id="irpower" type="number" min="0" max="255"></form>
+<script>
+    setInterval(function () {
+        if (document.getElementById("startstop").value === "Stop") {
+            getData();
+        }
+    }, 333);
 
-      document.getElementById('raworbp').onclick = function() {
-          if(document.getElementById("raworbp").value === "Raw"){
-             document.getElementById("raworbp").value = "BP"; bporraw = 1; } else 
-           { document.getElementById("raworbp").value = "Raw"; bporraw = 0; }
-      }
+    document.getElementById('raworbp').onclick = function () {
+        if (document.getElementById("raworbp").value === "Raw") {
+            document.getElementById("raworbp").value = "BP";
+            bporraw = 1;
+        } else {
+            document.getElementById("raworbp").value = "Raw";
+            bporraw = 0;
+        }
+    }
 
-      document.getElementById('startstop').onclick = function() {
-          if(document.getElementById("startstop").value === "Stop"){
-             document.getElementById("startstop").value = "Start"; startstop = 1; } else 
-           { document.getElementById("startstop").value = "Stop"; startstop = 0; }
-      }
+    document.getElementById('startstop').onclick = function () {
+        if (document.getElementById("startstop").value === "Stop") {
+            document.getElementById("startstop").value = "Start";
+            startstop = 1;
+        } else {
+            document.getElementById("startstop").value = "Stop";
+            startstop = 0;
+        }
+    }
 
-      function getData() {
-         var tempstr = "irpower="+document.getElementById("irpower").value+
-                       "&xrpower="+document.getElementById("rpower").value+
-                       "&raworbp="+bporraw+"&startstop="+startstop;
-         var xhr = new XMLHttpRequest();
-         xhr.open("GET", "getData?"+tempstr, true);
-         xhr.setRequestHeader("Content-Type", "application/bin");
-         xhr.send(tempstr);
+    function getData() {
+        var tempstr = "irpower=" + document.getElementById("irpower").value +
+            "&xrpower=" + document.getElementById("rpower").value +
+            "&raworbp=" + bporraw + "&startstop=" + startstop;
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "getData?" + tempstr, true);
+        xhr.setRequestHeader("Content-Type", "application/bin");
+        xhr.send(tempstr);
 
-         xhr.onreadystatechange = function() {
+        xhr.onreadystatechange = function () {
             if (this.readyState === XMLHttpRequest.DONE && this.status === 200) {
-               var DataRet = this.responseText;
-               var DataRetArray = DataRet.split(",");
-               var lasttraceptr;
-               console.log(" "+DataRet);
-               lasttraceptr = traceptr;
-              
-               // populate raw data arrays irdata and rdata
-               var cntsamples= DataRetArray[0];
-               //var cntstart = DataRetArray[1];
-               var heartrate = DataRetArray[2];
-               var pctspo2 = DataRetArray[3];
-               if(cntsamples >=1){
-               for(x=4;x<2*cntsamples+4;x=x+2) {
-                   tdata[traceptr] = cntstart++;
-                   irdata[traceptr] = parseInt(DataRetArray[x+0],10);
-                   rdata[traceptr] = parseInt(DataRetArray[x+1],10);
-                   traceptr++;
-               }}
+                var DataRet = this.responseText;
+                var DataRetArray = DataRet.split(",");
+                var lasttraceptr;
+                console.log(" " + DataRet);
+                lasttraceptr = traceptr;
 
-               //keep the plotting data sample at samples length
-               var maxsamples = 400;
-               if (tdata.length > maxsamples) {
-                   tdata.splice( 0, tdata.length-maxsamples);
-                   rdata.splice( 0, rdata.length-maxsamples);
-                   irdata.splice( 0, irdata.length-maxsamples);
-                   frdata.splice( 0, frdata.length-maxsamples);
-                   firdata.splice( 0, firdata.length-maxsamples);
-                   traceptr = maxsamples ;
-               }
+                // populate raw data arrays irdata and rdata
+                var cntsamples = DataRetArray[0];
+                //var cntstart = DataRetArray[1];
+                var heartrate = DataRetArray[2];
+                var pctspo2 = DataRetArray[3];
+                if (cntsamples >= 1) {
+                    for (x = 4; x < 2 * cntsamples + 4; x = x + 2) {
+                        tdata[traceptr] = cntstart++;
+                        irdata[traceptr] = parseInt(DataRetArray[x + 0], 10);
+                        rdata[traceptr] = parseInt(DataRetArray[x + 1], 10);
+                        traceptr++;
+                    }
+                }
 
-               //put the plotting data into plotly trace arrays
-               for(x=0; x<tdata.length; x++){
-                   trace1.x[x] = String(0.01 * tdata[x]);
-                   trace2.x[x] = String(0.01 * tdata[x]);
-                   trace1.y[x] = String(irdata[x]);
-                   trace2.y[x] = String(rdata[x]);
-               }
+                //keep the plotting data sample at samples length
+                var maxsamples = 400;
+                if (tdata.length > maxsamples) {
+                    tdata.splice(0, tdata.length - maxsamples);
+                    rdata.splice(0, rdata.length - maxsamples);
+                    irdata.splice(0, irdata.length - maxsamples);
+                    frdata.splice(0, frdata.length - maxsamples);
+                    firdata.splice(0, firdata.length - maxsamples);
+                    traceptr = maxsamples;
+                }
 
-               //interface to html exery plot update
-               document.getElementById("rate").innerHTML = 
-                      "Heart Rate = "+heartrate+" bps "+" SpO2 = "+pctspo2+"%"; 
-               Plotly.newPlot('myDiv', data, layout,{responsive: true});
+                //put the plotting data into plotly trace arrays
+                for (x = 0; x < tdata.length; x++) {
+                    trace1.x[x] = String(0.01 * tdata[x]);
+                    trace2.x[x] = String(0.01 * tdata[x]);
+                    trace1.y[x] = String(irdata[x]);
+                    trace2.y[x] = String(rdata[x]);
+                }
+
+                //interface to html exery plot update
+                document.getElementById("rate").innerHTML =
+                    "Heart Rate = " + heartrate + " bps " + " SpO2 = " + pctspo2 + "%";
+                Plotly.newPlot('myDiv', data, layout, {responsive: true});
             }
-         }
-      }
-      var cntstart = 0;
-      var startstop = 0;
-      var bporraw = 0;
-      var irdata = [0];
-      var rdata = [0];
-      var firdata = [0];
-      var frdata = [0];
-      var tdata = [0];
-      var traceptr = 0;
-      var DataRet;
-      var trace1 = { x: [0], y: [0], mode: "lines+markers", 
-                 line: {color:'rgb(255,0,0)', size: 1 },
-                 marker: {color:'rgb(255,0,0)', size: 3 } };
-      var trace2 = { x: [0], y: [0], mode: "lines+markers", 
-                 line: {color:'rgb(40,40,40)', size: 1 },
-                 marker: {color:'rgb(40,40,40)', size: 3 } };
+        }
+    }
 
-      layout= {
-            title: { text:'Heart Rate Monitor', font: { size: 24, color: '#ffffff' } },
-            showlegend : false,
-            autosize : true,
-            //width:400, height:300,
-            margin:{ l:30, r:20, b:40, t:40, pad:4},
-            plot_bgcolor:"#aaaf",
-            paper_bgcolor:"#a00f",
-            xaxis: { title: { text: 'Time (sec)', font: { size: 18, color: '#ffffff' } },
-                     tickfont: { size:16, color:'white'}
-            }
-      }
+    var cntstart = 0;
+    var startstop = 0;
+    var bporraw = 0;
+    var irdata = [0];
+    var rdata = [0];
+    var firdata = [0];
+    var frdata = [0];
+    var tdata = [0];
+    var traceptr = 0;
+    var DataRet;
+    var trace1 = {
+        x: [0], y: [0], mode: "lines+markers",
+        line: {color: 'rgb(255,0,0)', size: 1},
+        marker: {color: 'rgb(255,0,0)', size: 3}
+    };
+    var trace2 = {
+        x: [0], y: [0], mode: "lines+markers",
+        line: {color: 'rgb(40,40,40)', size: 1},
+        marker: {color: 'rgb(40,40,40)', size: 3}
+    };
 
-      var data = [trace1, trace2];
-      document.getElementById("irpower").value = 100;
-      document.getElementById("rpower").value = 180;
+    layout = {
+        title: {text: 'Heart Rate Monitor', font: {size: 24, color: '#ffffff'}},
+        showlegend: false,
+        autosize: true,
+        //width:400, height:300,
+        margin: {l: 30, r: 20, b: 40, t: 40, pad: 4},
+        plot_bgcolor: "#aaaf",
+        paper_bgcolor: "#a00f",
+        xaxis: {
+            title: {text: 'Time (sec)', font: {size: 18, color: '#ffffff'}},
+            tickfont: {size: 16, color: 'white'}
+        }
+    }
 
-    </script>
+    var data = [trace1, trace2];
+    document.getElementById("irpower").value = 100;
+    document.getElementById("rpower").value = 180;
+
+</script>
 </body>
 </html>
 
