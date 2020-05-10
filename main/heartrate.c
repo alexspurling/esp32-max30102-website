@@ -177,7 +177,7 @@ _Noreturn static void tcp_server_task(void *pvParameters) {
                     //int adc_read_ptr_shadow = adc_read_ptr;
                     //adc_read_ptr = 0;
 
-                    char outstr[1600];
+                    char outstr[2000];
                     /*
                               snprintf( outstr, sizeof outstr, "%d,",adc_read_ptr_shadow / 3);
                               snprintf(tmp, sizeof tmp, "%ld,", adc_read[0]); strcat (outstr, tmp);
@@ -341,8 +341,9 @@ _Noreturn void max30102_task() {
 
             char tmp[32];
             countedsamples++;
-            int outStrLen = strlen(outStr);
-            if (outStrLen < (sizeof outStr) - 20) {
+//            int outStrLen = strlen(outStr);
+//            if (outStrLen < (sizeof outStr) - 20) {
+            if (countedsamples < 100) {
                 if (raworbp == 0) {
                     snprintf(tmp, sizeof tmp, "%5.1f,%5.1f,", -1 * fredyv[4], -1 * firyv[4]);
                     strcat(outStr, tmp);
