@@ -110,6 +110,12 @@ _Noreturn static void tcp_server_task(void *pvParameters) {
     extern const uint8_t error_html_end[] asm("_binary_error_html_end");
     const uint32_t error_html_len = error_html_end - error_html_start;
 
+    char options_header[] = "HTTP/1.1 204 No Content\n"
+                            "Access-Control-Allow-Origin: * \n"
+                            "Access-Control-Allow-Headers: X-PINGOTHER, Content-Type \n"
+                            "Access-Control-Allow-Methods: GET, OPTIONS \n"
+                            "Access-Control-Max-Age: 1728000 \n";
+
     while (1) {
         struct sockaddr_in destAddr;
         destAddr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -158,7 +164,9 @@ _Noreturn static void tcp_server_task(void *pvParameters) {
 //                    sscanf(rx_buffer + strlen(http_type) + 2, "%s", temp_str);
 //                }
 
-                if (starts_with(rx_buffer, "GET /index.html") || starts_with(rx_buffer, "GET / ")) {
+                if (starts_with(rx_buffer, "OPTIONS")) {
+                    send(sock, options_header, strlen(options_header), 0);
+                } else if (starts_with(rx_buffer, "GET /index.html") || starts_with(rx_buffer, "GET / ")) {
                     send_file(sock, index_html_start, index_html_end);
                 } else if (starts_with(rx_buffer, "GET /favicon.ico")) {
                     send_file(sock, favicon_ico_start, favicon_ico_end);
@@ -220,10 +228,17 @@ _Noreturn static void tcp_server_task(void *pvParameters) {
                     snprintf(outstr, sizeof outstr, "%2d,%2d,%4.1f,%4.1f,", countedsamples, (int) (100 * meastime),
                              heartrate, pctspo2);
                     strcat(outstr, outStr);  //header and data for outstr
-                    int len2 = strlen(outstr);
-                    ESP_LOGI("","Printing %d bytes",len2);
+                    int contentLength = strlen(outstr);
+                    ESP_LOGI("", "Printing %d bytes", contentLength);
 
-                    send(sock, outstr, len2, 0);  //send outstr for tcp responce
+                    char header[100];
+                    sprintf(header, "HTTP/1.1 200 OK\n"
+                                    "Access-Control-Allow-Origin: *\n"
+                                    "Content-Type: text/plain\n"
+                                    "Content-Length: %d\n\n", contentLength);
+
+                    send(sock, header, strlen(header), 0);  //send header for tcp responce
+                    send(sock, outstr, contentLength, 0);  //send outstr for tcp responce
 
                     memset(outStr, 0, sizeof outStr);
                     countedsamples = 0;
@@ -345,7 +360,7 @@ _Noreturn void max30102_task() {
 //            if (outStrLen < (sizeof outStr) - 20) {
             if (countedsamples < 100) {
                 if (raworbp == 0) {
-                    snprintf(tmp, sizeof tmp, "%5.1f,%5.1f,", -1 * fredyv[4], -1 * firyv[4]);
+                    snprintf(tmp, sizeof tmp, "%5.1f,%5.1f,", -fredyv[4], -firyv[4]);
                     strcat(outStr, tmp);
                 }
                 else {

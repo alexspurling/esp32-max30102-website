@@ -130,7 +130,7 @@
             "&xrpower=" + document.getElementById("rpower").value +
             "&raworbp=" + bporraw + "&startstop=" + startstop;
         var xhr = new XMLHttpRequest();
-        xhr.open("GET", "getData?" + tempstr, true);
+        xhr.open("GET", "http://192.168.1.44/getData?" + tempstr, true);
         xhr.setRequestHeader("Content-Type", "application/bin");
         xhr.send(tempstr);
 
