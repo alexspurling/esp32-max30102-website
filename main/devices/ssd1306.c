@@ -105,26 +105,26 @@ uint8_t fonttable5x7[1080] =
 static int ssd1306_init() {
     i2c_write(I2C_ADDR_SSD1306, 0x00, 0xae);    // display off
     i2c_write(I2C_ADDR_SSD1306, 0x00, 0xd5);    // clockdiv
-    i2c_write(I2C_ADDR_SSD1306, 0x00, 0x80);
+    i2c_write(I2C_ADDR_SSD1306, 0x00, 0x80);    // recommended clock ratio
     i2c_write(I2C_ADDR_SSD1306, 0x00, 0xa8);    // multiplex
-    i2c_write(I2C_ADDR_SSD1306, 0x00, 0x3f);
+    i2c_write(I2C_ADDR_SSD1306, 0x00, 0x3f);    // (64 lines)
     i2c_write(I2C_ADDR_SSD1306, 0x00, 0xd3);    // offset
-    i2c_write(I2C_ADDR_SSD1306, 0x00, 0x00);
+    i2c_write(I2C_ADDR_SSD1306, 0x00, 0x00);    // 0 offset
     i2c_write(I2C_ADDR_SSD1306, 0x00, 0x40);    // startline
     i2c_write(I2C_ADDR_SSD1306, 0x00, 0x8d);    // charge pump
-    i2c_write(I2C_ADDR_SSD1306, 0x00, 0x14);
-    i2c_write(I2C_ADDR_SSD1306, 0x00, 0x20);    // memory mode
-    i2c_write(I2C_ADDR_SSD1306, 0x00, 0x00);
-    i2c_write(I2C_ADDR_SSD1306, 0x00, 0xa1);    // segregmap
+    i2c_write(I2C_ADDR_SSD1306, 0x00, 0x14);    // on
+    i2c_write(I2C_ADDR_SSD1306, 0x00, 0x20);    // memory addressing mode
+    i2c_write(I2C_ADDR_SSD1306, 0x00, 0x00);    // horizontal addressing mode
+    i2c_write(I2C_ADDR_SSD1306, 0x00, 0xa1);    // Set Segment Re-map
     i2c_write(I2C_ADDR_SSD1306, 0x00, 0xc8);    // comscandec
     i2c_write(I2C_ADDR_SSD1306, 0x00, 0xda);    // set com pins
     i2c_write(I2C_ADDR_SSD1306, 0x00, 0x12);
     i2c_write(I2C_ADDR_SSD1306, 0x00, 0x81);    // contrast
     i2c_write(I2C_ADDR_SSD1306, 0x00, 0xcf);
-    i2c_write(I2C_ADDR_SSD1306, 0x00, 0xd9);    // precharge
-    i2c_write(I2C_ADDR_SSD1306, 0x00, 0xf1);
-    i2c_write(I2C_ADDR_SSD1306, 0x00, 0xdb);    // vcom detect
-    i2c_write(I2C_ADDR_SSD1306, 0x00, 0x40);
+    i2c_write(I2C_ADDR_SSD1306, 0x00, 0xd9);    // Set pre-charge period
+    i2c_write(I2C_ADDR_SSD1306, 0x00, 0xf1);    //
+    i2c_write(I2C_ADDR_SSD1306, 0x00, 0xdb);    // vcom deselect
+    i2c_write(I2C_ADDR_SSD1306, 0x00, 0x20);    // ~0.77 x VCC
     i2c_write(I2C_ADDR_SSD1306, 0x00, 0xa4);    // resume
     i2c_write(I2C_ADDR_SSD1306, 0x00, 0xa6);    // normal (not inverted)
     //i2c_write( I2C_ADDR_SSD1306,  0x00,  0xe4);    // undocumented command saw on internet
