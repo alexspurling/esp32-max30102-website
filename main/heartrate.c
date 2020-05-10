@@ -138,7 +138,7 @@ _Noreturn static void tcp_server_task(void *pvParameters) {
                     //int adc_read_ptr_shadow = adc_read_ptr;
                     //adc_read_ptr = 0;
 
-                    char outstr[1500];
+                    char outstr[1600];
                     /*
                               snprintf( outstr, sizeof outstr, "%d,",adc_read_ptr_shadow / 3);
                               snprintf(tmp, sizeof tmp, "%ld,", adc_read[0]); strcat (outstr, tmp);
@@ -181,11 +181,12 @@ _Noreturn static void tcp_server_task(void *pvParameters) {
                     snprintf(outstr, sizeof outstr, "%2d,%2d,%4.1f,%4.1f,", countedsamples, (int) (100 * meastime),
                              heartrate, pctspo2);
                     strcat(outstr, outStr);  //header and data for outstr
+                    int len2 = strlen(outstr);
+                    ESP_LOGI("","Printing %d bytes",len2);
 
-                    send(sock, outstr, sizeof outstr, 0);  //send outstr for tcp responce 
+                    send(sock, outstr, len2, 0);  //send outstr for tcp responce
 
-                    //printf("%s\n", outstr);
-                    strcpy(outStr, "\0");  //reset outStr
+                    memset(outStr, 0, sizeof outStr);
                     countedsamples = 0;
 
 
@@ -301,7 +302,8 @@ _Noreturn void max30102_task() {
 
             char tmp[32];
             countedsamples++;
-            if (countedsamples < 100) {
+            int outStrLen = strlen(outStr);
+            if (outStrLen < (sizeof outStr) - 20) {
                 if (raworbp == 0) {
                     snprintf(tmp, sizeof tmp, "%5.1f,%5.1f,", -1 * fredyv[4], -1 * firyv[4]);
                     strcat(outStr, tmp);
