@@ -324,7 +324,7 @@ _Noreturn void max30102_task() {
         cntr++;
         char textstr[64];
         if ((cntr % 10) == 0) {
-            sprintf(textstr, "4Heart Rate|||4 %4.1f bpm|| %3.1f SpO2", heartrate, pctspo2);
+            sprintf(textstr, "4Heart Rate|||4 %4.1f bpm|| %3.1f SpO~", heartrate, pctspo2);
             ssd1306_text(textstr);
             vTaskDelay(2);
         }
