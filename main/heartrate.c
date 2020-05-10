@@ -54,6 +54,25 @@ float heartrate = 99.2, pctspo2 = 99.2;
 //float redsumsq, redtemp=0, irsumsq, irtemp=0;
 //float lastred = 0;
 
+static _Bool starts_with(const char *restrict string, const char *restrict prefix) {
+    while (*prefix) {
+        if (*prefix++ != *string++) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+static void send_file(int sock, uint8_t file_start[], uint8_t file_end[]) {
+    int pkt_buf_size = 1500;
+    uint pkt_end = pkt_buf_size;
+    const int file_len = file_end - file_start;
+    for (int pkt_ptr = 0; pkt_ptr < file_len; pkt_ptr = pkt_ptr + pkt_buf_size) {
+        if ((file_len - pkt_ptr) < pkt_buf_size) pkt_end = file_len - pkt_ptr;
+        send(sock, file_start + pkt_ptr, pkt_end, 0);
+    }
+}
+
 _Noreturn static void tcp_server_task(void *pvParameters) {
     char rx_buffer[1500];
     char addr_str[16];
@@ -61,6 +80,35 @@ _Noreturn static void tcp_server_task(void *pvParameters) {
     int addr_family;
     int ip_protocol;
     char *temp;
+
+    // index page
+    extern uint8_t index_html_start[] asm("_binary_index_html_start");
+    extern uint8_t index_html_end[] asm("_binary_index_html_end");
+
+    // default page
+    extern const uint8_t root_html_start[] asm("_binary_root_html_start");
+    extern const uint8_t root_html_end[] asm("_binary_root_html_end");
+    const uint32_t root_html_len = root_html_end - root_html_start;
+
+    // test.js
+    extern const uint8_t test_js_start[] asm("_binary_test_js_start");
+    extern const uint8_t test_js_end[] asm("_binary_test_js_end");
+    const uint32_t test_js_len = test_js_end - test_js_start;
+
+    // test.css
+    extern const uint8_t test_css_start[] asm("_binary_test_css_start");
+    extern const uint8_t test_css_end[] asm("_binary_test_css_end");
+    const uint32_t test_css_len = test_css_end - test_css_start;
+
+    // favicon.ico
+    extern uint8_t favicon_ico_start[] asm("_binary_favicon_ico_start");
+    extern uint8_t favicon_ico_end[] asm("_binary_favicon_ico_end");
+    const uint32_t favicon_ico_len = favicon_ico_end - favicon_ico_start;
+
+    // error page
+    extern const uint8_t error_html_start[] asm("_binary_error_html_start");
+    extern const uint8_t error_html_end[] asm("_binary_error_html_end");
+    const uint32_t error_html_len = error_html_end - error_html_start;
 
     while (1) {
         struct sockaddr_in destAddr;
@@ -86,45 +134,36 @@ _Noreturn static void tcp_server_task(void *pvParameters) {
             //ESP_LOGI("", "Socket accepted");
             int len = recv(sock, rx_buffer, sizeof(rx_buffer) - 1, 0);
             rx_buffer[len] = 0; // Null-terminate whatever we received and treat like a string
-            // Error occured during receiving
+            // Error occurred during receiving
             if (len <= 0) {
                 ESP_LOGE("", "recv failed: errno %d", errno);
                 break;
-            }
-            else {
+            } else {
                 //prints client source ip and http request packet to esp monitor
                 inet_ntoa_r(((struct sockaddr_in *) &sourceAddr)->sin_addr.s_addr,
                             addr_str, sizeof(addr_str) - 1);
-                //ESP_LOGI("---  ", "Received %d bytes from %s:", len, addr_str);
-                //ESP_LOGI("", "HTTP REQUEST Packet\n%s", rx_buffer);
+                ESP_LOGI("---  ", "Received %d bytes from %s:", len, addr_str);
+//                ESP_LOGI("", "HTTP REQUEST Packet\n%s", rx_buffer);
                 //parse request
-                char http_type[8];
-                char temp_str[16];
-                sscanf(rx_buffer, "%s/", http_type);
-                //ESP_LOGI("", "request type %s  ", http_type);
-                temp = strstr(rx_buffer, "?");
-                if (temp) {
-                    memcpy(temp_str, rx_buffer + strlen(http_type) + 2,
-                           strlen(rx_buffer) - strlen(temp));
-                    temp_str[strlen(temp_str)] = '\0';
-                } else {
-                    sscanf(rx_buffer + strlen(http_type) + 2, "%s", temp_str);
-                }
-                //return html page to socket
-                if (strcmp("index.html", temp_str) == 0 || strcmp("HTTP/1.1", temp_str) == 0) {
-                    extern const char index_html_start[] asm("_binary_index_html_start");
-                    extern const char index_html_end[] asm("_binary_index_html_end");
-                    int pkt_buf_size = 1500;
-                    int pkt_end = pkt_buf_size;
-                    int html_len = strlen(index_html_start) - strlen(index_html_end);
-                    for (int pkt_ptr = 0; pkt_ptr < html_len; pkt_ptr = pkt_ptr + pkt_buf_size) {
-                        if ((html_len - pkt_ptr) < pkt_buf_size) pkt_end = html_len - pkt_ptr;
-                        //ESP_LOGI("", "pkt_ptr %d pkt_end %d", pkt_ptr,pkt_end );
-                        send(sock, index_html_start + pkt_ptr, pkt_end, 0);
-                    }
-                } else
+//                char http_type[8];
+//                char temp_str[16];
+//                sscanf(rx_buffer, "%s/", http_type);
+//                //ESP_LOGI("", "request type %s  ", http_type);
+//                temp = strstr(rx_buffer, "?");
+//                if (temp) {
+//                    memcpy(temp_str, rx_buffer + strlen(http_type) + 2,
+//                           strlen(rx_buffer) - strlen(temp));
+//                    temp_str[strlen(temp_str)] = '\0';
+//                } else {
+//                    sscanf(rx_buffer + strlen(http_type) + 2, "%s", temp_str);
+//                }
+
+                if (starts_with(rx_buffer, "GET /index.html") || starts_with(rx_buffer, "GET / ")) {
+                    send_file(sock, index_html_start, index_html_end);
+                } else if (starts_with(rx_buffer, "GET /favicon.ico")) {
+                    send_file(sock, favicon_ico_start, favicon_ico_end);
+                } else if (starts_with(rx_buffer, "GET /getData")) {
                     //parse datagram, rcv data from webpage and return collected data
-                if (strcmp("GET", http_type) == 0 || strcmp("getData", temp_str) == 0) {
                     temp = strstr(rx_buffer, "irpower=");
                     if (temp)sscanf(temp, "irpower=%d", &irpower);
                     temp = strstr(rx_buffer, "xrpower=");
