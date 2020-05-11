@@ -54,6 +54,10 @@ float heartrate = 99.2, pctspo2 = 99.2;
 //float redsumsq, redtemp=0, irsumsq, irtemp=0;
 //float lastred = 0;
 
+
+static QueueHandle_t client_queue;
+const static int client_queue_size = 100;
+
 static _Bool starts_with(const char *restrict string, const char *restrict prefix) {
     while (*prefix) {
         if (*prefix++ != *string++) {
@@ -101,9 +105,9 @@ _Noreturn static void tcp_server_task(void *pvParameters) {
     const uint32_t test_css_len = test_css_end - test_css_start;
 
     // favicon.ico
-    extern uint8_t favicon_ico_start[] asm("_binary_favicon_ico_start");
-    extern uint8_t favicon_ico_end[] asm("_binary_favicon_ico_end");
-    const uint32_t favicon_ico_len = favicon_ico_end - favicon_ico_start;
+//    extern uint8_t favicon_ico_start[] asm("_binary_favicon_ico_start");
+//    extern uint8_t favicon_ico_end[] asm("_binary_favicon_ico_end");
+//    const uint32_t favicon_ico_len = favicon_ico_end - favicon_ico_start;
 
     // error page
     extern const uint8_t error_html_start[] asm("_binary_error_html_start");
@@ -168,8 +172,8 @@ _Noreturn static void tcp_server_task(void *pvParameters) {
                     send(sock, options_header, strlen(options_header), 0);
                 } else if (starts_with(rx_buffer, "GET /index.html") || starts_with(rx_buffer, "GET / ")) {
                     send_file(sock, index_html_start, index_html_end);
-                } else if (starts_with(rx_buffer, "GET /favicon.ico")) {
-                    send_file(sock, favicon_ico_start, favicon_ico_end);
+//                } else if (starts_with(rx_buffer, "GET /favicon.ico")) {
+//                    send_file(sock, favicon_ico_start, favicon_ico_end);
                 } else if (starts_with(rx_buffer, "GET /getData")) {
                     //parse datagram, rcv data from webpage and return collected data
                     temp = strstr(rx_buffer, "irpower=");
@@ -386,6 +390,291 @@ _Noreturn void max30102_task() {
     }
 }
 
+_Noreturn static void count_task(void* pvParameters) {
+    const static char* TAG = "count_task";
+    char out[20];
+    int len;
+    int clients;
+    const static char* word = "%i";
+    int n = 0;
+    const int DELAY = 1; // / portTICK_PERIOD_MS; // 1 second
+
+    ESP_LOGI(TAG,"starting task");
+    for(;;) {
+        len = sprintf(out,word,n);
+//        clients = ws_server_send_text_all(out,len);
+        if(clients > 0) {
+            //ESP_LOGI(TAG,"sent: \"%s\" to %i clients",out,clients);
+        }
+        n++;
+        vTaskDelay(DELAY);
+    }
+}
+
+
+
+// serves any clients
+static void http_serve(struct netconn *conn) {
+    const static char* TAG = "http_server";
+    const static char HTML_HEADER[] = "HTTP/1.1 200 OK\nContent-type: text/html\n\n";
+    const static char ERROR_HEADER[] = "HTTP/1.1 404 Not Found\nContent-type: text/html\n\n";
+    const static char JS_HEADER[] = "HTTP/1.1 200 OK\nContent-type: text/javascript\n\n";
+    const static char CSS_HEADER[] = "HTTP/1.1 200 OK\nContent-type: text/css\n\n";
+    const static char ICO_HEADER[] = "HTTP/1.1 200 OK\nContent-type: image/x-icon\n\n";
+    //const static char EVENT_HEADER[] = "HTTP/1.1 200 OK\nContent-Type: text/event-stream\nCache-Control: no-cache\nretry: 3000\n\n";
+
+    const static char OPTIONS_HEADER[] = "HTTP/1.1 204 No Content\n"
+                            "Access-Control-Allow-Origin: * \n"
+                            "Access-Control-Allow-Headers: X-PINGOTHER, Content-Type \n"
+                            "Access-Control-Allow-Methods: GET, OPTIONS \n"
+                            "Access-Control-Max-Age: 1728000 \n";
+
+    struct netbuf* inbuf;
+    static char* buf;
+    static uint16_t buflen;
+    static err_t err;
+
+    // To store parameter from getData query string
+    char *temp;
+    char outstr[2000];
+
+    // sensor default page
+    extern uint8_t index_html_start[] asm("_binary_index_html_start");
+    extern uint8_t index_html_end[] asm("_binary_index_html_end");
+    const uint32_t index_html_len = index_html_end - index_html_start;
+
+    // websocket demo
+    extern const uint8_t root_html_start[] asm("_binary_root_html_start");
+    extern const uint8_t root_html_end[] asm("_binary_root_html_end");
+    const uint32_t root_html_len = root_html_end - root_html_start;
+
+    // test.js
+    extern const uint8_t test_js_start[] asm("_binary_test_js_start");
+    extern const uint8_t test_js_end[] asm("_binary_test_js_end");
+    const uint32_t test_js_len = test_js_end - test_js_start;
+
+    // test.css
+    extern const uint8_t test_css_start[] asm("_binary_test_css_start");
+    extern const uint8_t test_css_end[] asm("_binary_test_css_end");
+    const uint32_t test_css_len = test_css_end - test_css_start;
+
+    // favicon.ico
+    extern const uint8_t favicon_ico_start[] asm("_binary_favicon_ico_start");
+    extern const uint8_t favicon_ico_end[] asm("_binary_favicon_ico_end");
+    const uint32_t favicon_ico_len = favicon_ico_end - favicon_ico_start;
+
+    // error page
+    extern const uint8_t error_html_start[] asm("_binary_error_html_start");
+    extern const uint8_t error_html_end[] asm("_binary_error_html_end");
+    const uint32_t error_html_len = error_html_end - error_html_start;
+
+    netconn_set_recvtimeout(conn,1000); // allow a connection timeout of 1 second
+    ESP_LOGI(TAG,"reading from client...");
+    err = netconn_recv(conn, &inbuf);
+    ESP_LOGI(TAG,"read from client");
+    if(err==ERR_OK) {
+        netbuf_data(inbuf, (void**)&buf, &buflen);
+        if(buf) {
+
+
+            if (starts_with(buf, "OPTIONS")) {
+                netconn_write(conn, OPTIONS_HEADER, sizeof(OPTIONS_HEADER) - 1, NETCONN_NOCOPY);
+                netconn_write(conn, index_html_start, index_html_len, NETCONN_NOCOPY);
+                netconn_close(conn);
+                netconn_delete(conn);
+                netbuf_delete(inbuf);
+            }
+
+            // default page
+            else if (strstr(buf,"GET / ") && !strstr(buf,"Upgrade: websocket")) {
+                ESP_LOGI(TAG,"Sending /");
+                netconn_write(conn, HTML_HEADER, sizeof(HTML_HEADER) - 1, NETCONN_NOCOPY);
+                netconn_write(conn, index_html_start, index_html_len, NETCONN_NOCOPY);
+                netconn_close(conn);
+                netconn_delete(conn);
+                netbuf_delete(inbuf);
+            }
+
+            // default page websocket
+            else if(strstr(buf,"GET / ") && strstr(buf,"Upgrade: websocket")) {
+                ESP_LOGI(TAG,"Requesting websocket on /");
+//                ws_server_add_client(conn,buf,buflen,"/",websocket_callback);
+                netbuf_delete(inbuf);
+            }
+
+            else if(strstr(buf,"GET /test.js ")) {
+                ESP_LOGI(TAG,"Sending /test.js");
+                netconn_write(conn, JS_HEADER, sizeof(JS_HEADER)-1,NETCONN_NOCOPY);
+                netconn_write(conn, test_js_start, test_js_len,NETCONN_NOCOPY);
+                netconn_close(conn);
+                netconn_delete(conn);
+                netbuf_delete(inbuf);
+            }
+
+            else if(strstr(buf,"GET /test.css ")) {
+                ESP_LOGI(TAG,"Sending /test.css");
+                netconn_write(conn, CSS_HEADER, sizeof(CSS_HEADER)-1,NETCONN_NOCOPY);
+                netconn_write(conn, test_css_start, test_css_len,NETCONN_NOCOPY);
+                netconn_close(conn);
+                netconn_delete(conn);
+                netbuf_delete(inbuf);
+            }
+
+            else if (strstr(buf,"GET /favicon.ico ")) {
+                ESP_LOGI(TAG,"Sending favicon.ico");
+                netconn_write(conn,ICO_HEADER,sizeof(ICO_HEADER)-1,NETCONN_NOCOPY);
+                netconn_write(conn,favicon_ico_start,favicon_ico_len,NETCONN_NOCOPY);
+                netconn_close(conn);
+                netconn_delete(conn);
+                netbuf_delete(inbuf);
+            }
+
+            else if (starts_with(buf, "GET /getData")) {
+                //parse datagram, rcv data from webpage and return collected data
+                temp = strstr(buf, "irpower=");
+                if (temp)sscanf(temp, "irpower=%d", &irpower);
+                temp = strstr(buf, "xrpower=");
+                if (temp)sscanf(temp, "xrpower=%d", &rpower);
+                temp = strstr(buf, "raworbp=");
+                if (temp)sscanf(temp, "raworbp=%d", &raworbp);
+                temp = strstr(buf, "startstop=");
+                if (temp)sscanf(temp, "startstop=%d", &startstop);
+                //printf ("ir=%d r=%d ss=%d braw=%d\n", irpower,rpower,startstop,raworbp);
+
+                //int adc_read_ptr_shadow = adc_read_ptr;
+                //adc_read_ptr = 0;
+
+                /*
+                          snprintf( outstr, sizeof outstr, "%d,",adc_read_ptr_shadow / 3);
+                          snprintf(tmp, sizeof tmp, "%ld,", adc_read[0]); strcat (outstr, tmp);
+                          snprintf(tmp, sizeof tmp, "%ld,", avgIR); strcat (outstr, tmp);
+                          snprintf(tmp, sizeof tmp, "%ld,", avgR); strcat (outstr, tmp);
+                          avgR = 0; avgIR = 0;
+                          //filter is 2nd order butterworth 0.5/25 Hz
+                          for( x = 0; x < adc_read_ptr_shadow; x++){
+                             if(x%3 == 1){
+                                 avgR = avgR + adc_read[x];
+                                 rxv[0] = rxv[1]; rxv[1] = rxv[2]; rxv[2] = rxv[3]; rxv[3] = rxv[4];
+                                 rxv[4] = ((float) adc_read[x]) / 3.48311;
+                                 ryv[0] = ryv[1]; ryv[1] = ryv[2]; ryv[2] = ryv[3]; ryv[3] = ryv[4];
+                                 ryv[4] = (rxv[0] + rxv[4]) - 2 * rxv[2]
+                                        + ( -0.1718123813 * ryv[0]) + (  0.3686645260 * ryv[1])
+                                        + ( -1.1718123813 * ryv[2]) + (  1.9738037992 * ryv[3]);
+                                 if(raworbp==1)snprintf(tmp, sizeof tmp, "%5.1f,", rxv[4]);
+                                    else snprintf(tmp, sizeof tmp, "%5.1f,", -1.0 * ryv[4]);
+                                 strcat (outstr, tmp);
+
+                   }
+                             if(x%3 == 2){
+                                 avgIR = avgIR + adc_read[x];
+                                 irxv[0] = irxv[1]; irxv[1] = irxv[2]; irxv[2] = irxv[3]; irxv[3] = irxv[4];
+                                 irxv[4] = ((float) adc_read[x]) / 3.48311;
+                                 iryv[0] = iryv[1]; iryv[1] = iryv[2]; iryv[2] = iryv[3]; iryv[3] = iryv[4];
+                                 iryv[4] = (irxv[0] + irxv[4]) - 2 * irxv[2]
+                                         + ( -0.1718123813 * iryv[0]) + (  0.3686645260 * iryv[1])
+                                         + ( -1.1718123813 * iryv[2]) + (  1.9738037992 * iryv[3]);
+                                 if(raworbp==1)snprintf(tmp, sizeof tmp, "%5.4f,", irxv[4]);
+                                    else   snprintf(tmp, sizeof tmp, "%5.4f,", -1.0 * iryv[4]);
+                                 strcat (outstr, tmp); }
+                          }
+                          strcat (outstr, "0\0");
+                          //ESP_LOGI("","sizeof=%d  %s",strlen(outstr), outstr);
+                          //printf("%s\n",outstr);
+                          send(sock, outstr, sizeof outstr, 0);
+                          */
+
+                snprintf(outstr, sizeof outstr, "%2d,%2d,%4.1f,%4.1f,", countedsamples, (int) (100 * meastime),
+                         heartrate, pctspo2);
+                strcat(outstr, outStr);  //header and data for outstr
+                int contentLength = strlen(outstr);
+                ESP_LOGI("", "Printing %d bytes", contentLength);
+
+                char header[100];
+                sprintf(header, "HTTP/1.1 200 OK\n"
+                                "Access-Control-Allow-Origin: *\n"
+                                "Content-Type: text/plain\n"
+                                "Content-Length: %d\n\n", contentLength);
+
+                netconn_write(conn, header, strlen(header), NETCONN_NOCOPY);
+                netconn_write(conn, outstr, contentLength, NETCONN_NOCOPY);
+
+                memset(outStr, 0, sizeof outStr);
+                countedsamples = 0;
+
+                netconn_close(conn);
+                netconn_delete(conn);
+                netbuf_delete(inbuf);
+            }
+
+            else if(strstr(buf,"GET /")) {
+                ESP_LOGI(TAG,"Unknown request, sending error page: %s",buf);
+                netconn_write(conn, ERROR_HEADER, sizeof(ERROR_HEADER)-1,NETCONN_NOCOPY);
+                netconn_write(conn, error_html_start, error_html_len,NETCONN_NOCOPY);
+                netconn_close(conn);
+                netconn_delete(conn);
+                netbuf_delete(inbuf);
+            }
+
+            else {
+                ESP_LOGI(TAG,"Unknown request");
+                netconn_close(conn);
+                netconn_delete(conn);
+                netbuf_delete(inbuf);
+            }
+        }
+        else {
+            ESP_LOGI(TAG,"Unknown request (empty?...)");
+            netconn_close(conn);
+            netconn_delete(conn);
+            netbuf_delete(inbuf);
+        }
+    }
+    else { // if err==ERR_OK
+        ESP_LOGI(TAG,"error on read, closing connection");
+        netconn_close(conn);
+        netconn_delete(conn);
+        netbuf_delete(inbuf);
+    }
+}
+
+
+// handles clients when they first connect. passes to a queue
+static void server_task(void* pvParameters) {
+    const static char* TAG = "server_task";
+    struct netconn *conn, *newconn;
+    static err_t err;
+    client_queue = xQueueCreate(client_queue_size,sizeof(struct netconn*));
+
+    conn = netconn_new(NETCONN_TCP);
+    netconn_bind(conn,NULL,80);
+    netconn_listen(conn);
+    ESP_LOGI(TAG,"server listening");
+    do {
+        err = netconn_accept(conn, &newconn);
+        ESP_LOGI(TAG,"new client");
+        if(err == ERR_OK) {
+            xQueueSendToBack(client_queue,&newconn, portMAX_DELAY);
+        }
+    } while(err == ERR_OK);
+    netconn_close(conn);
+    netconn_delete(conn);
+    ESP_LOGE(TAG,"task ending, rebooting board");
+    esp_restart();
+}
+
+_Noreturn // receives clients from queue, handles them
+static void server_handle_task(void* pvParameters) {
+    const static char* TAG = "server_handle_task";
+    struct netconn* conn;
+    ESP_LOGI(TAG,"task starting");
+    for(;;) {
+        xQueueReceive(client_queue,&conn,portMAX_DELAY);
+        if(!conn) continue;
+        http_serve(conn);
+    }
+    vTaskDelete(NULL);
+}
+
 void app_main() {
     //configure esp32 memory, wifi and i2c 
     ESP_ERROR_CHECK(nvs_flash_init());
@@ -402,8 +691,10 @@ void app_main() {
     max30102_init();
 
     //start tcp server and data collection tasks
-    xTaskCreate(tcp_server_task, "tcp_server", 8192, NULL, 4, NULL);
+    xTaskCreate(&server_task,"server_task",8192,NULL,9,NULL);
+//    xTaskCreate(tcp_server_task, "tcp_server", 8192, NULL, 4, NULL);
+    xTaskCreate(&server_handle_task,"server_handle_task",4000,NULL,6,NULL);
     xTaskCreate(max30102_task, "max30102_task", 4096, NULL, 5, NULL);
-
+    xTaskCreate(&count_task,"count_task",6000,NULL,2,NULL);
 }
 
