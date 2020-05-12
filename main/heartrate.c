@@ -186,8 +186,7 @@ _Noreturn void max30102_task() {
                 if (raworbp == 0) {
                     snprintf(tmp, sizeof tmp, "%5.1f,%5.1f,", -fredyv[4], -firyv[4]);
                     strcat(outStr, tmp);
-                }
-                else {
+                } else {
                     snprintf(tmp, sizeof tmp, "%5.1f,%5.1f,", fredxv[4], firxv[4]);
                     strcat(outStr, tmp);
                 }
@@ -209,63 +208,64 @@ _Noreturn void max30102_task() {
         }
     }
 }
+
 // sets up the led for pwm
 static void led_duty(uint16_t duty) {
     static uint16_t val;
-    static uint16_t max = (1L<<10)-1;
-    if(duty > 100) return;
+    static uint16_t max = (1L << 10) - 1;
+    if (duty > 100) return;
     val = (duty * max) / 100;
-    ledc_set_duty(ledc_channel.speed_mode,ledc_channel.channel,val);
-    ledc_update_duty(ledc_channel.speed_mode,ledc_channel.channel);
+    ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, val);
+    ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
 }
 
 // handles websocket events
-void websocket_callback(uint8_t num,WEBSOCKET_TYPE_t type,char* msg,uint64_t len) {
-    const static char* TAG = "websocket_callback";
+void websocket_callback(uint8_t num, WEBSOCKET_TYPE_t type, char *msg, uint64_t len) {
+    const static char *TAG = "websocket_callback";
     int value;
 
-    switch(type) {
+    switch (type) {
         case WEBSOCKET_CONNECT:
-            ESP_LOGI(TAG,"client %i connected!",num);
+            ESP_LOGI(TAG, "client %i connected!", num);
             break;
         case WEBSOCKET_DISCONNECT_EXTERNAL:
-            ESP_LOGI(TAG,"client %i sent a disconnect message",num);
+            ESP_LOGI(TAG, "client %i sent a disconnect message", num);
             led_duty(0);
             break;
         case WEBSOCKET_DISCONNECT_INTERNAL:
-            ESP_LOGI(TAG,"client %i was disconnected",num);
+            ESP_LOGI(TAG, "client %i was disconnected", num);
             break;
         case WEBSOCKET_DISCONNECT_ERROR:
-            ESP_LOGI(TAG,"client %i was disconnected due to an error",num);
+            ESP_LOGI(TAG, "client %i was disconnected due to an error", num);
             led_duty(0);
             break;
         case WEBSOCKET_TEXT:
-            if(len) { // if the message length was greater than zero
-                switch(msg[0]) {
+            if (len) { // if the message length was greater than zero
+                switch (msg[0]) {
                     case 'L':
-                        if(sscanf(msg,"L%i",&value)) {
-                            ESP_LOGI(TAG,"LED value: %i",value);
+                        if (sscanf(msg, "L%i", &value)) {
+                            ESP_LOGI(TAG, "LED value: %i", value);
                             led_duty(value);
-                            ws_server_send_text_all_from_callback(msg,len); // broadcast it!
+                            ws_server_send_text_all_from_callback(msg, len); // broadcast it!
                         }
                         break;
                     case 'M':
-                        ESP_LOGI(TAG, "got message length %i: %s", (int)len-1, &(msg[1]));
+                        ESP_LOGI(TAG, "got message length %i: %s", (int) len - 1, &(msg[1]));
                         break;
                     default:
-                        ESP_LOGI(TAG, "got an unknown message with length %i", (int)len);
+                        ESP_LOGI(TAG, "got an unknown message with length %i", (int) len);
                         break;
                 }
             }
             break;
         case WEBSOCKET_BIN:
-            ESP_LOGI(TAG,"client %i sent binary message of size %i:\n%s",num,(uint32_t)len,msg);
+            ESP_LOGI(TAG, "client %i sent binary message of size %i:\n%s", num, (uint32_t) len, msg);
             break;
         case WEBSOCKET_PING:
-            ESP_LOGI(TAG,"client %i pinged us with message of size %i:\n%s",num,(uint32_t)len,msg);
+            ESP_LOGI(TAG, "client %i pinged us with message of size %i:\n%s", num, (uint32_t) len, msg);
             break;
         case WEBSOCKET_PONG:
-            ESP_LOGI(TAG,"client %i responded to the ping",num);
+            ESP_LOGI(TAG, "client %i responded to the ping", num);
             break;
     }
 }
@@ -273,7 +273,7 @@ void websocket_callback(uint8_t num,WEBSOCKET_TYPE_t type,char* msg,uint64_t len
 
 // serves any clients
 static void http_serve(struct netconn *conn) {
-    const static char* TAG = "http_server";
+    const static char *TAG = "http_server";
     const static char HTML_HEADER[] = "HTTP/1.1 200 OK\nContent-type: text/html\n\n";
     const static char ERROR_HEADER[] = "HTTP/1.1 404 Not Found\nContent-type: text/html\n\n";
     const static char JS_HEADER[] = "HTTP/1.1 200 OK\nContent-type: text/javascript\n\n";
@@ -282,13 +282,13 @@ static void http_serve(struct netconn *conn) {
     //const static char EVENT_HEADER[] = "HTTP/1.1 200 OK\nContent-Type: text/event-stream\nCache-Control: no-cache\nretry: 3000\n\n";
 
     const static char OPTIONS_HEADER[] = "HTTP/1.1 204 No Content\n"
-                            "Access-Control-Allow-Origin: * \n"
-                            "Access-Control-Allow-Headers: X-PINGOTHER, Content-Type \n"
-                            "Access-Control-Allow-Methods: GET, OPTIONS \n"
-                            "Access-Control-Max-Age: 1728000 \n";
+                                         "Access-Control-Allow-Origin: * \n"
+                                         "Access-Control-Allow-Headers: X-PINGOTHER, Content-Type \n"
+                                         "Access-Control-Allow-Methods: GET, OPTIONS \n"
+                                         "Access-Control-Max-Age: 1728000 \n";
 
-    struct netbuf* inbuf;
-    static char* buf;
+    struct netbuf *inbuf;
+    static char *buf;
     static uint16_t buflen;
     static err_t err;
 
@@ -326,13 +326,13 @@ static void http_serve(struct netconn *conn) {
     extern const uint8_t error_html_end[] asm("_binary_error_html_end");
     const uint32_t error_html_len = error_html_end - error_html_start;
 
-    netconn_set_recvtimeout(conn,1000); // allow a connection timeout of 1 second
-    ESP_LOGI(TAG,"reading from client...");
+    netconn_set_recvtimeout(conn, 1000); // allow a connection timeout of 1 second
+    ESP_LOGI(TAG, "reading from client...");
     err = netconn_recv(conn, &inbuf);
-    ESP_LOGI(TAG,"read from client");
-    if(err==ERR_OK) {
-        netbuf_data(inbuf, (void**)&buf, &buflen);
-        if(buf) {
+    ESP_LOGI(TAG, "read from client");
+    if (err == ERR_OK) {
+        netbuf_data(inbuf, (void **) &buf, &buflen);
+        if (buf) {
 
 
             if (starts_with(buf, "OPTIONS")) {
@@ -343,9 +343,9 @@ static void http_serve(struct netconn *conn) {
                 netbuf_delete(inbuf);
             }
 
-            // default page
-            else if ((strstr(buf,"GET / ") || strstr(buf,"GET /index.html ")) && !strstr(buf,"Upgrade: websocket")) {
-                ESP_LOGI(TAG,"Sending /");
+                // default page
+            else if ((strstr(buf, "GET / ") || strstr(buf, "GET /index.html ")) && !strstr(buf, "Upgrade: websocket")) {
+                ESP_LOGI(TAG, "Sending /");
                 netconn_write(conn, HTML_HEADER, sizeof(HTML_HEADER) - 1, NETCONN_NOCOPY);
                 netconn_write(conn, index_html_start, index_html_len, NETCONN_NOCOPY);
                 netconn_close(conn);
@@ -353,9 +353,9 @@ static void http_serve(struct netconn *conn) {
                 netbuf_delete(inbuf);
             }
 
-            // default page
-            else if (strstr(buf,"GET /root.html ")) {
-                ESP_LOGI(TAG,"Sending /root.html");
+                // default page
+            else if (strstr(buf, "GET /root.html ")) {
+                ESP_LOGI(TAG, "Sending /root.html");
                 netconn_write(conn, HTML_HEADER, sizeof(HTML_HEADER) - 1, NETCONN_NOCOPY);
                 netconn_write(conn, root_html_start, root_html_len, NETCONN_NOCOPY);
                 netconn_close(conn);
@@ -363,41 +363,33 @@ static void http_serve(struct netconn *conn) {
                 netbuf_delete(inbuf);
             }
 
-            // default page websocket
-            else if(strstr(buf,"GET / ") && strstr(buf,"Upgrade: websocket")) {
-                ESP_LOGI(TAG,"Requesting websocket on /");
+                // default page websocket
+            else if (strstr(buf, "GET / ") && strstr(buf, "Upgrade: websocket")) {
+                ESP_LOGI(TAG, "Requesting websocket on /");
                 ws_server_add_client(conn, buf, buflen, "/", websocket_callback);
                 netbuf_delete(inbuf);
-            }
-
-            else if(strstr(buf,"GET /test.js ")) {
-                ESP_LOGI(TAG,"Sending /test.js");
-                netconn_write(conn, JS_HEADER, sizeof(JS_HEADER)-1,NETCONN_NOCOPY);
-                netconn_write(conn, test_js_start, test_js_len,NETCONN_NOCOPY);
+            } else if (strstr(buf, "GET /test.js ")) {
+                ESP_LOGI(TAG, "Sending /test.js");
+                netconn_write(conn, JS_HEADER, sizeof(JS_HEADER) - 1, NETCONN_NOCOPY);
+                netconn_write(conn, test_js_start, test_js_len, NETCONN_NOCOPY);
                 netconn_close(conn);
                 netconn_delete(conn);
                 netbuf_delete(inbuf);
-            }
-
-            else if(strstr(buf,"GET /test.css ")) {
-                ESP_LOGI(TAG,"Sending /test.css");
-                netconn_write(conn, CSS_HEADER, sizeof(CSS_HEADER)-1,NETCONN_NOCOPY);
-                netconn_write(conn, test_css_start, test_css_len,NETCONN_NOCOPY);
+            } else if (strstr(buf, "GET /test.css ")) {
+                ESP_LOGI(TAG, "Sending /test.css");
+                netconn_write(conn, CSS_HEADER, sizeof(CSS_HEADER) - 1, NETCONN_NOCOPY);
+                netconn_write(conn, test_css_start, test_css_len, NETCONN_NOCOPY);
                 netconn_close(conn);
                 netconn_delete(conn);
                 netbuf_delete(inbuf);
-            }
-
-            else if (strstr(buf,"GET /favicon.ico ")) {
-                ESP_LOGI(TAG,"Sending favicon.ico");
-                netconn_write(conn,ICO_HEADER,sizeof(ICO_HEADER)-1,NETCONN_NOCOPY);
-                netconn_write(conn,favicon_ico_start,favicon_ico_len,NETCONN_NOCOPY);
+            } else if (strstr(buf, "GET /favicon.ico ")) {
+                ESP_LOGI(TAG, "Sending favicon.ico");
+                netconn_write(conn, ICO_HEADER, sizeof(ICO_HEADER) - 1, NETCONN_NOCOPY);
+                netconn_write(conn, favicon_ico_start, favicon_ico_len, NETCONN_NOCOPY);
                 netconn_close(conn);
                 netconn_delete(conn);
                 netbuf_delete(inbuf);
-            }
-
-            else if (starts_with(buf, "GET /getData")) {
+            } else if (starts_with(buf, "GET /getData")) {
                 //parse datagram, rcv data from webpage and return collected data
                 temp = strstr(buf, "irpower=");
                 if (temp)sscanf(temp, "irpower=%d", &irpower);
@@ -472,33 +464,27 @@ static void http_serve(struct netconn *conn) {
                 netconn_close(conn);
                 netconn_delete(conn);
                 netbuf_delete(inbuf);
-            }
-
-            else if(strstr(buf,"GET /")) {
-                ESP_LOGI(TAG,"Unknown request, sending error page: %s",buf);
-                netconn_write(conn, ERROR_HEADER, sizeof(ERROR_HEADER)-1,NETCONN_NOCOPY);
-                netconn_write(conn, error_html_start, error_html_len,NETCONN_NOCOPY);
+            } else if (strstr(buf, "GET /")) {
+                ESP_LOGI(TAG, "Unknown request, sending error page: %s", buf);
+                netconn_write(conn, ERROR_HEADER, sizeof(ERROR_HEADER) - 1, NETCONN_NOCOPY);
+                netconn_write(conn, error_html_start, error_html_len, NETCONN_NOCOPY);
+                netconn_close(conn);
+                netconn_delete(conn);
+                netbuf_delete(inbuf);
+            } else {
+                ESP_LOGI(TAG, "Unknown request");
                 netconn_close(conn);
                 netconn_delete(conn);
                 netbuf_delete(inbuf);
             }
-
-            else {
-                ESP_LOGI(TAG,"Unknown request");
-                netconn_close(conn);
-                netconn_delete(conn);
-                netbuf_delete(inbuf);
-            }
-        }
-        else {
-            ESP_LOGI(TAG,"Unknown request (empty?...)");
+        } else {
+            ESP_LOGI(TAG, "Unknown request (empty?...)");
             netconn_close(conn);
             netconn_delete(conn);
             netbuf_delete(inbuf);
         }
-    }
-    else { // if err==ERR_OK
-        ESP_LOGI(TAG,"error on read, closing connection");
+    } else { // if err==ERR_OK
+        ESP_LOGI(TAG, "error on read, closing connection");
         netconn_close(conn);
         netconn_delete(conn);
         netbuf_delete(inbuf);
@@ -507,62 +493,63 @@ static void http_serve(struct netconn *conn) {
 
 
 // handles clients when they first connect. passes to a queue
-static void server_task(void* pvParameters) {
-    const static char* TAG = "server_task";
+static void server_task(void *pvParameters) {
+    const static char *TAG = "server_task";
     struct netconn *conn, *newconn;
     static err_t err;
-    client_queue = xQueueCreate(client_queue_size,sizeof(struct netconn*));
+    client_queue = xQueueCreate(client_queue_size, sizeof(struct netconn *));
 
     conn = netconn_new(NETCONN_TCP);
-    netconn_bind(conn,NULL,80);
+    netconn_bind(conn, NULL, 80);
     netconn_listen(conn);
-    ESP_LOGI(TAG,"server listening");
+    ESP_LOGI(TAG, "server listening");
     do {
         err = netconn_accept(conn, &newconn);
-        ESP_LOGI(TAG,"new client");
-        if(err == ERR_OK) {
-            xQueueSendToBack(client_queue,&newconn, portMAX_DELAY);
+        ESP_LOGI(TAG, "new client");
+        if (err == ERR_OK) {
+            xQueueSendToBack(client_queue, &newconn, portMAX_DELAY);
         }
-    } while(err == ERR_OK);
+    } while (err == ERR_OK);
     netconn_close(conn);
     netconn_delete(conn);
-    ESP_LOGE(TAG,"task ending, rebooting board");
+    ESP_LOGE(TAG, "task ending, rebooting board");
     esp_restart();
 }
 
 _Noreturn // receives clients from queue, handles them
-static void server_handle_task(void* pvParameters) {
-    const static char* TAG = "server_handle_task";
-    struct netconn* conn;
-    ESP_LOGI(TAG,"task starting");
-    for(;;) {
-        xQueueReceive(client_queue,&conn, portMAX_DELAY);
-        if(!conn) continue;
+static void server_handle_task(void *pvParameters) {
+    const static char *TAG = "server_handle_task";
+    struct netconn *conn;
+    ESP_LOGI(TAG, "task starting");
+    for (;;) {
+        xQueueReceive(client_queue, &conn, portMAX_DELAY);
+        if (!conn) continue;
         http_serve(conn);
     }
     vTaskDelete(NULL);
 }
 
-_Noreturn static void count_task(void* pvParameters) {
-    const static char* TAG = "count_task";
+_Noreturn static void count_task(void *pvParameters) {
+    const static char *TAG = "count_task";
     char out[20];
     int len;
     int clients;
-    const static char* word = "%i";
+    const static char *word = "%i";
     int n = 0;
     const int DELAY = 1; // / portTICK_PERIOD_MS; // 1 second
 
-    ESP_LOGI(TAG,"starting task");
-    for(;;) {
-        len = sprintf(out,word,n);
+    ESP_LOGI(TAG, "starting task");
+    for (;;) {
+        len = sprintf(out, word, n);
 //        clients = ws_server_send_text_all(out,len);
-        if(clients > 0) {
+        if (clients > 0) {
             //ESP_LOGI(TAG,"sent: \"%s\" to %i clients",out,clients);
         }
         n++;
         vTaskDelay(DELAY);
     }
 }
+
 void app_main() {
     //configure esp32 memory, wifi and i2c 
     ESP_ERROR_CHECK(nvs_flash_init());
@@ -580,9 +567,9 @@ void app_main() {
 
     ws_server_start();
     //start tcp server and data collection tasks
-    xTaskCreate(&server_task,"server_task",8192,NULL,9,NULL);
-    xTaskCreate(&server_handle_task,"server_handle_task",4000,NULL,6,NULL);
+    xTaskCreate(&server_task, "server_task", 8192, NULL, 9, NULL);
+    xTaskCreate(&server_handle_task, "server_handle_task", 4000, NULL, 6, NULL);
     xTaskCreate(max30102_task, "max30102_task", 4096, NULL, 5, NULL);
-    xTaskCreate(&count_task,"count_task",6000,NULL,2,NULL);
+    xTaskCreate(&count_task, "count_task", 6000, NULL, 2, NULL);
 }
 
