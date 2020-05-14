@@ -1,3 +1,7 @@
+
+#define LOW 0
+#define HIGH 1
+
 uint8_t fonttable5x7[1080] =
         {
                 0x00, 0x00, 0x00, 0x00, 0x00, // SPACE
@@ -101,6 +105,13 @@ uint8_t fonttable5x7[1080] =
                 0x41, 0x41, 0x36, 0x08, 0x00, // }
                 0x48, 0x64, 0x54, 0x48, 0x00  // ~ (Modified to display ₂)
         };
+
+static void ssd1306_reset(int reset_pin) {
+    gpio_set_direction(reset_pin, GPIO_MODE_OUTPUT);
+    gpio_set_level(reset_pin, LOW);
+    vTaskDelay(100);
+    gpio_set_level(reset_pin, HIGH);
+}
 
 static int ssd1306_init() {
     i2c_write(I2C_ADDR_SSD1306, 0x00, 0xae);    // display off

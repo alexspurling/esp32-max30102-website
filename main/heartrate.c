@@ -32,6 +32,7 @@
 
 #include "./interfaces/i2c.c"
 
+#define SSD1306_RESET_PIN      GPIO_NUM_19
 #define I2C_ADDR_SSD1306       0x3d
 
 #include "./devices/ssd1306.c"
@@ -224,6 +225,8 @@ void websocket_callback(uint8_t num, WEBSOCKET_TYPE_t type, char *msg, uint64_t 
     const static char *TAG = "websocket_callback";
     int value;
 
+    ESP_LOGI(TAG, "Got ws callback type %i", type);
+
     switch (type) {
         case WEBSOCKET_CONNECT:
             ESP_LOGI(TAG, "client %i connected!", num);
@@ -336,8 +339,8 @@ static void http_serve(struct netconn *conn) {
 
 
             if (starts_with(buf, "OPTIONS")) {
+                ESP_LOGI(TAG, "Sending OPTIONS");
                 netconn_write(conn, OPTIONS_HEADER, sizeof(OPTIONS_HEADER) - 1, NETCONN_NOCOPY);
-                netconn_write(conn, index_html_start, index_html_len, NETCONN_NOCOPY);
                 netconn_close(conn);
                 netconn_delete(conn);
                 netbuf_delete(inbuf);
@@ -354,7 +357,7 @@ static void http_serve(struct netconn *conn) {
             }
 
                 // default page
-            else if (strstr(buf, "GET /root.html ")) {
+            else if (strstr(buf, "GET /root.html ") && !strstr(buf, "Upgrade: websocket")) {
                 ESP_LOGI(TAG, "Sending /root.html");
                 netconn_write(conn, HTML_HEADER, sizeof(HTML_HEADER) - 1, NETCONN_NOCOPY);
                 netconn_write(conn, root_html_start, root_html_len, NETCONN_NOCOPY);
@@ -559,6 +562,7 @@ void app_main() {
     i2c_init();
     i2cdetect();
 
+    ssd1306_reset(SSD1306_RESET_PIN);
     ssd1306_init();
     ssd1306_blank(0xcc);
 
