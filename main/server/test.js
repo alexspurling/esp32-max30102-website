@@ -24,11 +24,22 @@ redBuffer = [];
 irBuffer = [];
 
 function newFrame() {
-  if (redBuffer.length !== 1) {
-    console.log("Buffer lens: ", redBuffer.length, irBuffer.length);
+  var red1 = redBuffer.shift();
+  var ir1 = irBuffer.shift();
+  if (red1) {
+    redline.shiftAdd([red1]);
   }
-  redline.shiftAdd(redBuffer);
-  irline.shiftAdd(irBuffer);
+  if (ir1) {
+    irline.shiftAdd([ir1]);
+  }
+  var red2 = redBuffer.shift();
+  var ir2 = irBuffer.shift();
+  if (red2) {
+    redline.shiftAdd([red2]);
+  }
+  if (ir2) {
+    irline.shiftAdd([ir2]);
+  }
   wglp.update();
   redBuffer.length = 0;
   irBuffer.length = 0;
@@ -55,8 +66,11 @@ websocket.onmessage = function(evt) {
     default:
       document.getElementById("output").innerHTML = evt.data;
       var data = evt.data.split(",");
-      redBuffer.push(parseFloat(data[0]));
-      irBuffer.push(parseFloat(data[1]));
+      console.log(data.length);
+      for (var i = 0; i < data.length; i+=2) {
+        redBuffer.push(parseFloat(data[i]));
+        irBuffer.push(parseFloat(data[i+1]));
+      }
       break;
   }
 }
