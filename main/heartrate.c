@@ -111,12 +111,12 @@ _Noreturn void max30102_task() {
     while (1) {
         if (lirpower != irpower) {
             data = (uint8_t) irpower;
-            i2c_write(I2C_ADDR_MAX30102, 0x0d, data);
+            i2c_write(I2C_ADDR_MAX30102, 0x0c, data);
             lirpower = irpower;
         }
         if (lrpower != rpower) {
             data = (uint8_t) rpower;
-            i2c_write(I2C_ADDR_MAX30102, 0x0c, data);
+            i2c_write(I2C_ADDR_MAX30102, 0x0d, data);
             lrpower = rpower;
         }
         i2c_read(I2C_ADDR_MAX30102, 0x04, &wptr, 1);
@@ -133,7 +133,7 @@ _Noreturn void max30102_task() {
             firxv[2] = firxv[3];
             firxv[3] = firxv[4];
             firxv[4] = (1 / 3.48311) *
-                       (256 * 256 * (regdata[6 * cnt + 3] % 4) + 256 * regdata[6 * cnt + 4] + regdata[6 * cnt + 5]);
+                       (256 * 256 * (regdata[6 * cnt + 0] % 4) + 256 * regdata[6 * cnt + 1] + regdata[6 * cnt + 2]);
             firyv[0] = firyv[1];
             firyv[1] = firyv[2];
             firyv[2] = firyv[3];
@@ -147,7 +147,7 @@ _Noreturn void max30102_task() {
             fredxv[2] = fredxv[3];
             fredxv[3] = fredxv[4];
             fredxv[4] = (1 / 3.48311) *
-                        (256 * 256 * (regdata[6 * cnt + 0] % 4) + 256 * regdata[6 * cnt + 1] + regdata[6 * cnt + 2]);
+                        (256 * 256 * (regdata[6 * cnt + 3] % 4) + 256 * regdata[6 * cnt + 4] + regdata[6 * cnt + 5]);
             fredyv[0] = fredyv[1];
             fredyv[1] = fredyv[2];
             fredyv[2] = fredyv[3];
@@ -168,9 +168,8 @@ _Noreturn void max30102_task() {
                 meastime - lastmeastime > 0.5) {
                 hrarray[hrarraycnt % 5] = 60 / (meastime - lastmeastime);
                 spo2array[hrarraycnt % 5] = 110 - 25 * ((fredyv[4] / fredxv[4]) / (firyv[4] / firxv[4]));
-                if (spo2array[hrarraycnt % 5] > 100)spo2array[hrarraycnt % 5] = 99.9;
-                printf("%6.2f  %4.2f     hr= %5.1f     spo2= %5.1f\n", meastime, meastime - lastmeastime, heartrate,
-                       pctspo2);
+                if (spo2array[hrarraycnt % 5] > 100) spo2array[hrarraycnt % 5] = 99.9;
+                printf("%6.2f  %4.2f     hr= %5.1f     spo2= %5.1f\n", meastime, meastime - lastmeastime, heartrate, pctspo2);
                 lastmeastime = meastime;
                 hrarraycnt++;
                 heartrate = (hrarray[0] + hrarray[1] + hrarray[2] + hrarray[3] + hrarray[4]) / 5;
