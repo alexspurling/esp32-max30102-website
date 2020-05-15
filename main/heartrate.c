@@ -50,7 +50,7 @@
 float meastime;
 int countedsamples = 0;
 int irpower = 0, rpower = 0, lirpower = 0, lrpower = 0;
-int startstop = 0, raworbp = 0;
+int startstop = 0, raworbp = 1;
 float heartrate = 99.2, pctspo2 = 99.2;
 //long avgR, avgIR;
 //int adc_read_ptr = 0;
@@ -59,11 +59,25 @@ float heartrate = 99.2, pctspo2 = 99.2;
 //float redsumsq, redtemp=0, irsumsq, irtemp=0;
 //float lastred = 0;
 
+uint8_t data_buf_read_idx = 0;
+uint8_t data_buf_write_idx = 0;
+float data_buf[400]; // Store red and ir in even and odd indices respectively
 
 static QueueHandle_t client_queue;
 const static int client_queue_size = 100;
 
 static ledc_channel_config_t ledc_channel;
+
+static float read_data_buf() {
+    float read = data_buf[data_buf_read_idx];
+    data_buf_read_idx = (data_buf_read_idx + 1) % sizeof(data_buf);
+    return read;
+}
+
+static void write_data_buf(float value) {
+    data_buf[data_buf_write_idx] = value;
+    data_buf_write_idx = (data_buf_write_idx + 1) % sizeof(data_buf);
+}
 
 static _Bool starts_with(const char *restrict string, const char *restrict prefix) {
     while (*prefix) {
@@ -182,14 +196,22 @@ _Noreturn void max30102_task() {
             countedsamples++;
 //            int outStrLen = strlen(outStr);
 //            if (outStrLen < (sizeof outStr) - 20) {
-            if (countedsamples < 100) {
-                if (raworbp == 0) {
-                    snprintf(tmp, sizeof tmp, "%5.1f,%5.1f,", -fredyv[4], -firyv[4]);
-                    strcat(outStr, tmp);
-                } else {
-                    snprintf(tmp, sizeof tmp, "%5.1f,%5.1f,", fredxv[4], firxv[4]);
-                    strcat(outStr, tmp);
-                }
+//            if (countedsamples < 100) {
+//                if (raworbp == 0) {
+//                    snprintf(tmp, sizeof tmp, "%5.1f,%5.1f,", -fredyv[4], -firyv[4]);
+//                    strcat(outStr, tmp);
+//                } else {
+//                    snprintf(tmp, sizeof tmp, "%5.1f,%5.1f,", fredxv[4], firxv[4]);
+//                    strcat(outStr, tmp);
+//                }
+//            }
+
+            if (raworbp) {
+                write_data_buf(-fredyv[4]);
+                write_data_buf(-firyv[4]);
+            } else {
+                write_data_buf(fredxv[4]);
+                write_data_buf(firxv[4]);
             }
 
             //if((tcnt%10)==0) printf("%8.3f %2d samp=%3d red= %8.3f %8.2f  ir= %8.3f %8.2f rate= %4.1f o2= %4.1f\n",
@@ -460,7 +482,7 @@ static void http_serve(struct netconn *conn) {
 //                netconn_write(conn, header, strlen(header), NETCONN_NOCOPY);
 //                netconn_write(conn, outstr, contentLength, NETCONN_NOCOPY);
 
-                memset(outStr, 0, sizeof outStr);
+//                memset(outStr, 0, sizeof outStr);
                 countedsamples = 0;
 
                 netconn_close(conn);
@@ -536,16 +558,19 @@ _Noreturn static void count_task(void *pvParameters) {
     char out[20];
     int len;
     int clients;
-    const static char *word = "%i";
+    const static char *word = "%5.1f,%5.1f";
+
     int n = 0;
     const int DELAY = 1; // / portTICK_PERIOD_MS; // 1 second
 
     ESP_LOGI(TAG, "starting task");
     for (;;) {
-        len = sprintf(out, word, n);
-//        clients = ws_server_send_text_all(out,len);
+        float red = read_data_buf();
+        float ir = read_data_buf();
+        len = sprintf(out, word, red, ir);
+        clients = ws_server_send_text_all(out,len);
         if (clients > 0) {
-            //ESP_LOGI(TAG,"sent: \"%s\" to %i clients",out,clients);
+            ESP_LOGI(TAG,"sent: \"%s\" to %i clients",out,clients);
         }
         n++;
         vTaskDelay(DELAY);
