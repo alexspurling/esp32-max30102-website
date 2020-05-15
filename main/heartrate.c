@@ -46,7 +46,7 @@
 #include "websocket_server.h"
 
 //globals
-char outStr[1500];
+//char outStr[1500];
 float meastime;
 int countedsamples = 0;
 int irpower = 0, rpower = 0, lirpower = 0, lrpower = 0;
@@ -296,7 +296,7 @@ static void http_serve(struct netconn *conn) {
 
     // To store parameter from getData query string
     char *temp;
-    char outstr[2000];
+//    char outstr[2000];
 
     // sensor default page
     extern uint8_t index_html_start[] asm("_binary_index_html_start");
@@ -445,20 +445,20 @@ static void http_serve(struct netconn *conn) {
                           send(sock, outstr, sizeof outstr, 0);
                           */
 
-                snprintf(outstr, sizeof outstr, "%2d,%2d,%4.1f,%4.1f,", countedsamples, (int) (100 * meastime),
-                         heartrate, pctspo2);
-                strcat(outstr, outStr);  //header and data for outstr
-                int contentLength = strlen(outstr);
-                ESP_LOGI("", "Printing %d bytes", contentLength);
-
-                char header[100];
-                sprintf(header, "HTTP/1.1 200 OK\n"
-                                "Access-Control-Allow-Origin: *\n"
-                                "Content-Type: text/plain\n"
-                                "Content-Length: %d\n\n", contentLength);
-
-                netconn_write(conn, header, strlen(header), NETCONN_NOCOPY);
-                netconn_write(conn, outstr, contentLength, NETCONN_NOCOPY);
+//                snprintf(outstr, sizeof outstr, "%2d,%2d,%4.1f,%4.1f,", countedsamples, (int) (100 * meastime),
+//                         heartrate, pctspo2);
+//                strcat(outstr, outStr);  //header and data for outstr
+//                int contentLength = strlen(outstr);
+//                ESP_LOGI("", "Printing %d bytes", contentLength);
+//
+//                char header[100];
+//                sprintf(header, "HTTP/1.1 200 OK\n"
+//                                "Access-Control-Allow-Origin: *\n"
+//                                "Content-Type: text/plain\n"
+//                                "Content-Length: %d\n\n", contentLength);
+//
+//                netconn_write(conn, header, strlen(header), NETCONN_NOCOPY);
+//                netconn_write(conn, outstr, contentLength, NETCONN_NOCOPY);
 
                 memset(outStr, 0, sizeof outStr);
                 countedsamples = 0;
@@ -571,7 +571,7 @@ void app_main() {
     ws_server_start();
     //start tcp server and data collection tasks
     xTaskCreate(&server_task, "server_task", 8192, NULL, 9, NULL);
-    xTaskCreate(&server_handle_task, "server_handle_task", 4000, NULL, 6, NULL);
+    xTaskCreate(&server_handle_task, "server_handle_task", 8192, NULL, 6, NULL);
     xTaskCreate(max30102_task, "max30102_task", 4096, NULL, 5, NULL);
     xTaskCreate(&count_task, "count_task", 6000, NULL, 2, NULL);
 }
