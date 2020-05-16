@@ -17,32 +17,46 @@ redline.lineSpaceX(-1, 2 / numX);
 irline.lineSpaceX(-1, 2 / numX);
 wglp.addLine(redline);
 wglp.addLine(irline);
-wglp.gScaleY = 0.002;
+wglp.gScaleY = 0.0005;
 wglp.gOffsetY = -0.5;
 
 redBuffer = [];
 irBuffer = [];
 
+var droppedFrames = 0;
+
+var lastRed = 0;
+var lastIr = 0;
+var frameCount = 0;
+
+function addPoint() {
+  var red = 0;
+  var ir = 0;
+  document.getElementById("bufferLength").innerHTML = redBuffer.length;
+  if (redBuffer.length > 0 && irBuffer.length > 0) {
+    red = redBuffer.shift();
+    ir = irBuffer.shift();
+    lastRed = red;
+    lastIr = ir;
+    redline.shiftAdd([red]);
+    irline.shiftAdd([ir]);
+  } else {
+    droppedFrames += 1;
+    document.getElementById("droppedFrames").innerHTML = droppedFrames;
+    // red = lastRed;
+    // ir = lastIr;
+  }
+}
+
 function newFrame() {
-  var red1 = redBuffer.shift();
-  var ir1 = irBuffer.shift();
-  if (red1) {
-    redline.shiftAdd([red1]);
+  addPoint();
+  if (frameCount % 3 !== 0) {
+    addPoint();
   }
-  if (ir1) {
-    irline.shiftAdd([ir1]);
-  }
-  var red2 = redBuffer.shift();
-  var ir2 = irBuffer.shift();
-  if (red2) {
-    redline.shiftAdd([red2]);
-  }
-  if (ir2) {
-    irline.shiftAdd([ir2]);
-  }
+  frameCount++;
   wglp.update();
-  redBuffer.length = 0;
-  irBuffer.length = 0;
+  // redBuffer.length = 0;
+  // irBuffer.length = 0;
   window.requestAnimationFrame(newFrame);
 }
 window.requestAnimationFrame(newFrame);
@@ -64,12 +78,17 @@ websocket.onmessage = function(evt) {
       console.log("Led = " + value);
       break;
     default:
-      document.getElementById("output").innerHTML = evt.data;
+      // document.getElementById("output").innerHTML = evt.data;
       var data = evt.data.split(",");
-      console.log(data.length);
-      for (var i = 0; i < data.length; i+=2) {
-        redBuffer.push(parseFloat(data[i]));
-        irBuffer.push(parseFloat(data[i+1]));
+      // console.log(data.length);
+      for (var i = 0; i < data.length-1; i+=2) {
+        var red = parseFloat(data[i]);
+        var ir = parseFloat(data[i + 1]);
+        // if (isNaN(red)) {
+        //   console.log("Red is NaN at idx " + i + ". Str was: ", data);
+        // }
+        redBuffer.push(red);
+        irBuffer.push(ir);
       }
       break;
   }

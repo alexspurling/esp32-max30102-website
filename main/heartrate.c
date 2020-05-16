@@ -100,11 +100,14 @@ static void send_file(int sock, uint8_t file_start[], uint8_t file_end[]) {
 
 void max30102_init() {
     uint8_t data;
-    data = (0x2 << 5);  //sample averaging 0=1,1=2,2=4,3=8,4=16,5+=32
+    data = (0x2 << 5);  //  SMP_AVE (Sample Averaging) = 0x2 (4)
     i2c_write(I2C_ADDR_MAX30102, 0x08, data);
-    data = 0x03;                //mode = red and ir samples
+    data = 0x03;                // Mode Configuration = 0x03 (SpO2 mode - red and ir leds are active)
     i2c_write(I2C_ADDR_MAX30102, 0x09, data);
-    data = (0x3 << 5) + (0x3 << 2) + 0x3; //first and last 0x3, middle smap rate 0=50,1=100,etc
+    // SPO2_ADC_RGE (ADC range) = 0x3 (18-bit resolution)
+    // SPO2_SR (Sample Rate) = 0x3 (400 samples/second - will be divided by the SMP_AVE above to make 100 s/s)
+    // LED_PW (LED Pulse Width) = 0x3 (411µS - enables max 18bit ADC resolution)
+    data = (0x3 << 5) + (0x3 << 2) + 0x3;
     i2c_write(I2C_ADDR_MAX30102, 0x0a, data);
     data = 0xd0;                //ir pulse power
     i2c_write(I2C_ADDR_MAX30102, 0x0c, data);
@@ -226,7 +229,7 @@ _Noreturn void max30102_task() {
         if ((cntr % 10) == 0) {
             sprintf(textstr, "4Heart Rate|||4 %4.1f bpm|| %3.1f SpO~", heartrate, pctspo2);
             ssd1306_text(textstr);
-            vTaskDelay(2);
+//            vTaskDelay(2);
         }
     }
 }
@@ -553,24 +556,59 @@ static void server_handle_task(void *pvParameters) {
     vTaskDelete(NULL);
 }
 
+
+uint32_t fill_buffer(char* out, size_t buffer_size) {
+    uint32_t len = 0;
+    char word[] = "%d,%d,";
+    while (1) {
+        int red = rand();
+        int ir = rand();
+        char temp[50];
+        sprintf(temp, word, red, ir);
+        uint32_t temp_len = strlen(temp);
+        if (len + temp_len < buffer_size) {
+            strcat(out, temp);
+            len += temp_len;
+        } else {
+            break;
+        }
+    }
+    return len;
+}
+
 _Noreturn static void count_task(void *pvParameters) {
     const static char *TAG = "count_task";
-    char out[20];
-    int len;
+    char out[1000];
     int clients;
-    const static char *word = "%5.1f,%5.1f";
+    const static char *word = "%5.1f,%5.1f,";
 
     int n = 0;
-    const int DELAY = 1; // / portTICK_PERIOD_MS; // 1 second
+    const int DELAY = 10; // / portTICK_PERIOD_MS; // 1 second
 
     ESP_LOGI(TAG, "starting task");
     for (;;) {
-        float red = read_data_buf();
-        float ir = read_data_buf();
-        len = sprintf(out, word, red, ir);
-        clients = ws_server_send_text_all(out,len);
-        if (clients > 0) {
-            ESP_LOGI(TAG,"sent: \"%s\" to %i clients",out,clients);
+        uint8_t write_idx = data_buf_write_idx;
+        uint count = 0;
+        int len = 0;
+        while (data_buf_read_idx != write_idx) {
+            float red = read_data_buf();
+            float ir = read_data_buf();
+
+            char temp[50];
+            int temp_len = sprintf(temp, word, red, ir);
+            if (len + temp_len < sizeof(out)) {
+                memcpy(out + len, temp, temp_len + 1); // Copy temp buffer including terminating \0
+                len += temp_len;
+            } else {
+                break;
+            }
+            count++;
+        }
+        if (count > 0) {
+            clients = ws_server_send_text_all(out, len);
+            if (clients > 0) {
+                ESP_LOGI(TAG,"sent: %i points: \"%s\"", count, out);
+            }
         }
         n++;
         vTaskDelay(DELAY);
