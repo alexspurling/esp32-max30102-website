@@ -18,7 +18,7 @@ irline.lineSpaceX(-1, 2 / numX);
 wglp.addLine(redline);
 wglp.addLine(irline);
 wglp.gScaleY = 0.0005;
-wglp.gOffsetY = -0.5;
+wglp.gOffsetY = 0;
 
 redBuffer = [];
 irBuffer = [];
@@ -28,6 +28,7 @@ var droppedFrames = 0;
 var lastRed = 0;
 var lastIr = 0;
 var frameCount = 0;
+var targetScaleY = 1;
 
 function addPoint() {
   var red = 0;
@@ -52,6 +53,19 @@ function newFrame() {
   addPoint();
   if (frameCount % 3 !== 0) {
     addPoint();
+  }
+  const increment = 0.00001;
+  if (wglp.gScaleY !== targetScaleY) {
+    // normal: 0.00025
+    // very tiny: 0.1
+    // very large: 0.000009
+    var diff = wglp.gScaleY - targetScaleY;
+    if (Math.abs(diff) < increment) {
+      wglp.gScaleY = targetScaleY;
+    } else {
+      var newScale = wglp.gScaleY - (diff / 10);
+      wglp.gScaleY = newScale;
+    }
   }
   frameCount++;
   wglp.update();
@@ -82,13 +96,30 @@ websocket.onmessage = function(evt) {
       var data = evt.data.split(",");
       // console.log(data.length);
       for (var i = 0; i < data.length-1; i+=2) {
-        var red = parseFloat(data[i]);
-        var ir = parseFloat(data[i + 1]);
-        // if (isNaN(red)) {
-        //   console.log("Red is NaN at idx " + i + ". Str was: ", data);
-        // }
-        redBuffer.push(red);
-        irBuffer.push(ir);
+        redBuffer.push(parseFloat(data[i]));
+        irBuffer.push(parseFloat(data[i + 1]));
+      }
+      var maxValue = -Infinity;
+      var minValue = Infinity;
+      for (var i = redline.numPoints / 2; i < redline.numPoints; i++) {
+        if (redline.getY(i) > maxValue) {
+          maxValue = redline.getY(i);
+        }
+        if (redline.getY(i) < minValue) {
+          minValue = redline.getY(i);
+        }
+        if (irline.getY(i) > maxValue) {
+          maxValue = irline.getY(i);
+        }
+        if (irline.getY(i) < minValue) {
+          minValue = irline.getY(i);
+        }
+      }
+      document.getElementById("min").innerHTML = minValue;
+      document.getElementById("max").innerHTML = maxValue;
+      var range = maxValue - minValue;
+      if (range > 0) {
+        targetScaleY = 1 / range;
       }
       break;
   }
