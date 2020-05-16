@@ -583,7 +583,7 @@ _Noreturn static void count_task(void *pvParameters) {
     const static char *word = "%5.1f,%5.1f,";
 
     int n = 0;
-    const int DELAY = 10; // / portTICK_PERIOD_MS; // 1 second
+    const int DELAY = 20; // / portTICK_PERIOD_MS; // 1 second
 
     ESP_LOGI(TAG, "starting task");
     for (;;) {
