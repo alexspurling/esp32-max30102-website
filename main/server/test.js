@@ -8,15 +8,16 @@ canv.width  = 900 / devicePixelRatio;
 canv.height = 300 / devicePixelRatio;
 const numX = Math.round(canv.clientWidth * devicePixelRatio);
 console.log(devicePixelRatio);
-const color = new graphs.ColorRGBA(Math.random(), Math.random(), Math.random(), 1);
 const redline = new graphs.WebglLine(new graphs.ColorRGBA(200, 0, 0, 1), numX);
 const irline = new graphs.WebglLine(new graphs.ColorRGBA(0, 0, 0, 1), numX);
+
 const wglp = new graphs.WebGLPlot(canv);
 
 redline.lineSpaceX(-1, 2 / numX);
 irline.lineSpaceX(-1, 2 / numX);
 wglp.addLine(redline);
 wglp.addLine(irline);
+drawGrid();
 wglp.gScaleY = 0.0005;
 wglp.gOffsetY = 0;
 
@@ -28,7 +29,19 @@ var droppedFrames = 0;
 var lastRed = 0;
 var lastIr = 0;
 var frameCount = 0;
+var startScaleY = 1;
 var targetScaleY = 1;
+var animation = 0;
+
+function drawGrid() {
+  for (var y = -10000; y <= 10000; y += 1000) {
+    Math.random()
+    const gridLine = new graphs.WebglLine(new graphs.ColorRGBA(0.8, 0.8, 0.8, 1), 2);
+    gridLine.lineSpaceX(-1, 100);
+    gridLine.setY(0, y);
+    wglp.addLine(gridLine);
+  }
+}
 
 function addPoint() {
   var red = 0;
@@ -59,13 +72,18 @@ function newFrame() {
     // normal: 0.00025
     // very tiny: 0.1
     // very large: 0.000009
-    var diff = wglp.gScaleY - targetScaleY;
-    if (Math.abs(diff) < increment) {
+    var ease;
+    if (animation < 0.5) {
+      ease = 4 * Math.pow(animation, 3);
+    } else {
+      ease = 1 - Math.pow(-2 * animation + 2, 3) / 2;
+    }
+    if (Math.abs(wglp.gScaleY - targetScaleY) < increment) {
       wglp.gScaleY = targetScaleY;
     } else {
-      var newScale = wglp.gScaleY - (diff / 10);
-      wglp.gScaleY = newScale;
+      wglp.gScaleY = startScaleY + (targetScaleY - startScaleY) * ease;
     }
+    animation += 0.05;
   }
   frameCount++;
   wglp.update();
@@ -115,10 +133,12 @@ websocket.onmessage = function(evt) {
           minValue = irline.getY(i);
         }
       }
-      document.getElementById("min").innerHTML = minValue;
-      document.getElementById("max").innerHTML = maxValue;
+      document.getElementById("min").innerHTML = targetScaleY;
+      document.getElementById("max").innerHTML = 1/targetScaleY;
       var range = maxValue - minValue;
       if (range > 0) {
+        animation = 0;
+        startScaleY = wglp.gScaleY;
         targetScaleY = 1 / range;
       }
       break;
